@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-@Module({})
+import { Policy } from './policies.entity.js';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Policy])],
+})
 class PoliciesModule {}
 
 export { PoliciesModule };

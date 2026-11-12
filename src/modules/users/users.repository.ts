@@ -1,4 +1,4 @@
-// Repositoty - это файл, в котором, мы изолируем раболту с БД от бизнес-логики приложения
+// Repositoty - это файл, в котором, мы изолируем работу с БД от бизнес-логики приложения
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { User } from './users.entity.js';
 
 // @Injectable - декторатор, он указывает что класс является провайдером. Этот декоратор разрешает NestJS автоматически создавать
-// экземпляр этого класса и внедрять(передавать) его в другие клвссы(например сервисы в контроллеры) через constructor
+// экземпляр этого класса и внедрять(передавать) его в другие классы(например сервисы в контроллеры) через constructor
 @Injectable()
 class UserRepository {
   constructor(
