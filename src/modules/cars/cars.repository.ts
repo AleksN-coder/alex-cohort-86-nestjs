@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { Car } from './cars.entity.js';
 
 @Injectable()
-class CarsRepositiry {
+class CarsRepository {
   constructor(
     @InjectRepository(Car)
     private readonly repository: Repository<Car>,
@@ -16,11 +16,21 @@ class CarsRepositiry {
   }
 
   async findAllActive(): Promise<Car[]> {
-    return this.repository.findBy({ active: true });
+    return this.repository.find({
+      where: { active: true },
+      relations: {
+        owner: true,
+      },
+    });
   }
 
   async findById(id: number): Promise<Car | null> {
-    return this.repository.findOneBy({ id });
+    return this.repository.findOne({
+      where: { id },
+      relations: {
+        owner: true,
+      },
+    });
   }
 
   async deleteById(id: number): Promise<void> {
@@ -28,4 +38,4 @@ class CarsRepositiry {
   }
 }
 
-export { CarsRepositiry };
+export { CarsRepository };

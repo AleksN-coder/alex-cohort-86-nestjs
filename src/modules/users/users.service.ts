@@ -4,23 +4,34 @@ import { Injectable } from '@nestjs/common';
 import { UserRepository } from './users.repository.js';
 import { User } from './users.entity.js';
 import { ROLE } from './enums/role.enum.js';
+import { UserDto } from './dto/responses/users.dto.js';
+import { UserSaveDto } from './dto/requests/users.save-dto.js';
+import { UserUpdateDto } from './dto/requests/user.update-dto.js';
+import { UsersMapper } from './dto/users.mapper.js';
 
 @Injectable()
 class UsersService {
-  constructor(private readonly repository: UserRepository) {}
+  constructor(
+    private readonly repository: UserRepository,
+    private readonly mapper: UsersMapper,
+  ) {}
 
-  async createUser(user: User): Promise<User> {
-    user.role = ROLE.CLIENT;
-    user.active = true;
+  async createUser(userSaveDto: UserSaveDto): Promise<UserDto> {
+    const entity: User = this.mapper.mapDtoToEntity(userSaveDto);
+    entity.role = ROLE.CLIENT;
+    entity.active = true;
 
-    return await this.repository.save(user);
+    await this.repository.save(entity);
+    return this.mapper.mapEntityToDto(entity);
   }
 
-  async getAllActiveUsers(): Promise<User[]> {
-    return await this.repository.findAllActive();
+  async getAllActiveUsers(): Promise<UserDto[]> {
+    const users: User[] = await this.repository.findAllActive();
+
+    return this.mapper.mapEntityListToDtoList(users);
   }
 
-  async getActiveUserById(id: number): Promise<User | null> {
+  async getActiveEntityById(id: number): Promise<User | null> {
     const user = await this.repository.findById(id);
 
     if (!user || !user.active) {
@@ -30,18 +41,28 @@ class UsersService {
     return user;
   }
 
-  async updateUser(id: number, user: User): Promise<void> {
-    const foundedUser: User | null = await this.getActiveUserById(id);
+  async getActiveUserById(id: number): Promise<UserDto | null> {
+    const user: User | null = await this.getActiveEntityById(id);
+
+    if (!user || !user.active) {
+      return null;
+    }
+
+    return this.mapper.mapEntityToDto(user);
+  }
+
+  async updateUser(id: number, updateDto: UserUpdateDto): Promise<void> {
+    const foundedUser: User | null = await this.repository.findById(id);
 
     if (foundedUser) {
-      foundedUser.name = user.name;
-      await this.repository.save(user);
+      foundedUser.name = updateDto.newName;
+      await this.repository.save(foundedUser);
     }
   }
 
   // На самом деле мы из БД пользователя не удаляем насовсем, мы просто меняем его статус active на false
   async deleteUserById(id: number): Promise<void> {
-    const userForDelete: User | null = await this.getActiveUserById(id);
+    const userForDelete: User | null = await this.repository.findById(id);
 
     if (userForDelete) {
       userForDelete.active = false;
@@ -50,7 +71,7 @@ class UsersService {
   }
 
   async restoreUserById(id: number): Promise<void> {
-    const userForRestore: User | null = await this.getActiveUserById(id);
+    const userForRestore: User | null = await this.repository.findById(id);
 
     if (userForRestore && !userForRestore.active) {
       userForRestore.active = true;
@@ -59,7 +80,7 @@ class UsersService {
   }
 
   async setRole(id: number, role: ROLE): Promise<void> {
-    const user: User | null = await this.getActiveUserById(id);
+    const user: User | null = await this.repository.findById(id);
 
     if (user) {
       user.role = role;

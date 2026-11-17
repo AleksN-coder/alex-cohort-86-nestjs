@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { Policy } from './policies.entity.js';
 
 @Injectable()
-class PolicyRepositiry {
+class PolicyRepository {
   constructor(
     @InjectRepository(Policy)
     private readonly repository: Repository<Policy>,
@@ -16,7 +16,12 @@ class PolicyRepositiry {
   }
 
   async findAllActive(): Promise<Policy[]> {
-    return this.repository.findBy({ active: true });
+    return this.repository.find({
+      where: { active: true },
+      relations: {
+        cars: true,
+      },
+    });
   }
 
   async findById(id: number): Promise<Policy | null> {
@@ -33,4 +38,4 @@ class PolicyRepositiry {
   }
 }
 
-export { PolicyRepositiry };
+export { PolicyRepository };
