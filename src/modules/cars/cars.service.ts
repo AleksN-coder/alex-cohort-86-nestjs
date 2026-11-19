@@ -3,25 +3,35 @@ import { CarsRepository } from './cars.repository.js';
 import { Car } from './cars.entity.js';
 import { User } from '../users/users.entity.js';
 import { UsersService } from './../users/users.service.js';
+import { CarsMapper } from './dto/cars.mappers.js';
+import { CarsDto } from './dto/responses/cars.dto.js';
+import { CarsSaveDto } from './dto/requests/cars.save-dto.js';
+import { CarsUpdateDto } from './dto/requests/cars.update-dto.js';
 
 @Injectable()
 class CarsService {
   constructor(
     private readonly repository: CarsRepository,
     private readonly usersService: UsersService,
+    private readonly mapper: CarsMapper,
   ) {}
 
-  async createCar(car: Car): Promise<Car> {
-    car.active = true;
+  async createCar(saveDto: CarsSaveDto): Promise<CarsDto> {
+    const entity: Car = this.mapper.mapDtoToEntity(saveDto);
 
-    return await this.repository.save(car);
+    entity.active = true;
+    await this.repository.save(entity);
+
+    return this.mapper.mapEntityToDto(entity);
   }
 
-  async getAllActiveCars(): Promise<Car[]> {
-    return await this.repository.findAllActive();
+  async getAllActiveCars(): Promise<CarsDto[]> {
+    const cars: Car[] = await this.repository.findAllActive();
+
+    return this.mapper.mapEntityListToDtoList(cars);
   }
 
-  async getActiveCarById(id: number): Promise<Car | null> {
+  async getActiveEntityById(id: number): Promise<Car | null> {
     const car: Car | null = await this.repository.findById(id);
 
     if (!car || !car.active) {
@@ -31,11 +41,21 @@ class CarsService {
     return car;
   }
 
-  async updateCar(id: number, car: Car): Promise<void> {
+  async getActiveCarById(id: number): Promise<CarsDto | null> {
+    const car: Car | null = await this.getActiveEntityById(id);
+
+    if (!car || !car.active) {
+      return null;
+    }
+
+    return this.mapper.mapEntityToDto(car);
+  }
+
+  async updateCar(id: number, carUpdateDto: CarsUpdateDto): Promise<void> {
     const foundedCar: Car | null = await this.repository.findById(id);
 
     if (foundedCar) {
-      foundedCar.color = car.color;
+      foundedCar.color =carUpdateDto.newColor;
       await this.repository.save(foundedCar);
     }
   }
@@ -62,9 +82,9 @@ class CarsService {
     carId: number,
     ownerId: number,
   ): Promise<void> {
-    const car: Car | null = await this.getActiveCarById(carId);
+    const car: Car | null = await this.getActiveEntityById(carId);
     const owner: User | null =
-      await this.usersService.getActiveUserById(ownerId);
+      await this.usersService.getActiveEntityById(ownerId);
 
     if (car && owner) {
       car.owner = owner;
